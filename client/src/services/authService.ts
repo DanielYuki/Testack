@@ -1,3 +1,4 @@
+// authServices.ts
 import { getDB } from '@/db/supabase/supabaseClient'
 import type { User } from '@/lib/types/user'
 
@@ -56,6 +57,27 @@ class AuthService {
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
+      })
+
+      if (error) {
+        return { success: false, error: error.message }
+      }
+
+      return { success: true }
+    } catch (error: any) {
+      return { success: false, error: error.message || 'An unexpected error occurred' }
+    }
+  }
+
+  // Sign in with Google OAuth
+  // Trying direct supabase sign in with google for now (no need to use the google envs here)
+  async signInWithGoogle(): Promise<AuthResponse> {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`, // TODO: change this to the correct redirect url
+        },
       })
 
       if (error) {
