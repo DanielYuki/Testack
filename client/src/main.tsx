@@ -1,6 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { ToastContainer } from 'react-toastify'
 import './index.css'
 
 // COMPONENTS
@@ -25,6 +26,7 @@ createRoot(document.getElementById('root')!).render(
     <UserProvider>
       <ThemeProvider>
         <BrowserRouter>
+          <ToastContainer />
           <Routes>
             <Route path='/*' element={<Layout />}>
               <Route path='' element={<Home />} />

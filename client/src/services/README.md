@@ -7,12 +7,14 @@ This implementation follows Supabase best practices for user management with a s
 ### 1. Simplified UserService (`userService.ts`)
 
 **Before:** Complex system with multiple fallback methods, timeouts, and error handling
+
 - `fetchUser()` with 10-second timeout
-- `fetchUserAlternative()` with 8-second timeout  
+- `fetchUserAlternative()` with 8-second timeout
 - `getUserWithFallback()` trying multiple methods
 - Complex error handling and retry logic
 
 **After:** Simple, reliable approach following Supabase patterns
+
 - Single `getUser(session)` method that uses the session as source of truth
 - Uses `maybeSingle()` instead of `single()` to avoid PGRST116 errors
 - Graceful fallback to auth data if database query fails
@@ -47,6 +49,7 @@ This implementation follows Supabase best practices for user management with a s
 ## Best Practices Implemented
 
 ### 1. **Session as Source of Truth**
+
 ```typescript
 // ✅ Good: Use session for authenticated user data
 const user = await userService.getUser(session)
@@ -56,6 +59,7 @@ const user = await userService.fetchUser(userId)
 ```
 
 ### 2. **Use maybeSingle() for Optional Data**
+
 ```typescript
 // ✅ Good: Won't throw error if no row exists
 .maybeSingle()
@@ -65,6 +69,7 @@ const user = await userService.fetchUser(userId)
 ```
 
 ### 3. **Graceful Database Failures**
+
 ```typescript
 // ✅ Good: Always have auth data as fallback
 try {
@@ -76,6 +81,7 @@ try {
 ```
 
 ### 4. **Separate Auth and Profile Updates**
+
 ```typescript
 // ✅ Good: Update auth first, then sync to database
 await authService.updateProfile(updates)
@@ -111,4 +117,4 @@ await userService.updateUserProfile(user.id, { name: 'New Name' })
 
 // Check if user has database profile
 const exists = await userService.userExistsInDatabase(user.id)
-``` 
+```

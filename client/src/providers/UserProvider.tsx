@@ -52,7 +52,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
   const handleAuthStateChange = async (event: string, newSession: any) => {
     console.log('Auth state change:', event, newSession?.user?.id || 'no user')
-    
+
     setSession(newSession)
 
     if (newSession?.user) {
@@ -61,7 +61,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       setUser(null)
       setLoading(false)
     }
-    
+
     setIsInitialized(true)
   }
 
@@ -98,7 +98,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
       // Try to update in database (create if doesn't exist)
       const userExistsInDb = await userService.userExistsInDatabase(user.id)
-      
+
       if (userExistsInDb) {
         // Update existing profile
         const dbResponse = await userService.updateUserProfile(user.id, updates)

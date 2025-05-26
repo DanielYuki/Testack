@@ -13,13 +13,13 @@ class UserService {
   // Get user data from session (auth) and optionally merge with database profile
   async getUser(session: any): Promise<User> {
     console.log('Getting user from session:', session?.user?.id)
-    
+
     if (!session?.user) {
       throw new Error('No user in session')
     }
 
     const authUser = session.user
-    
+
     // Create base user from auth session
     const baseUser: User = {
       id: authUser.id,
@@ -34,54 +34,53 @@ class UserService {
 
     console.log('Base user:', baseUser)
 
+    // returning here for now because there is some sus bugs on the supabase fetching mechanism
+    return baseUser as User
+
     // Try to get additional profile data from database
-    try {
-      console.log('Fetching user profile from database...')
-      const { data: profileData, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', authUser.id)
-        .maybeSingle() // Won't throw error if no row exists
+    // try {
+    //   console.log('Fetching user profile from database...')
+    //   const { data: profileData, error } = await supabase
+    //     .from('users')
+    //     .select('*')
+    //     .eq('id', authUser.id)
+    //     .maybeSingle() // Won't throw error if no row exists
 
-      console.log('Profile data:', profileData, error)
+    //   console.log('Profile data:', profileData, error)
 
-      if (error) {
-        console.log('Could not fetch user profile from database:', error.message)
-        // Return base user from auth - this is not an error
-        return baseUser
-      }
+    //   if (error) {
+    //     console.log('Could not fetch user profile from database:', error.message)
+    //     // Return base user from auth - this is not an error
+    //     return baseUser
+    //   }
 
-      if (profileData) {
-        // Merge database profile with auth data
-        console.log('Found user profile in database, merging with auth data')
-        return {
-          ...baseUser,
-          ...profileData,
-          // Ensure auth data takes precedence for these fields
-          id: authUser.id,
-          email: authUser.email || profileData.email,
-          created_at: new Date(authUser.created_at),
-          updated_at: new Date(profileData.updated_at || authUser.updated_at || authUser.created_at),
-        }
-      }
+    //   if (profileData) {
+    //     // Merge database profile with auth data
+    //     console.log('Found user profile in database, merging with auth data')
+    //     return {
+    //       ...baseUser,
+    //       ...profileData,
+    //       // Ensure auth data takes precedence for these fields
+    //       id: authUser.id,
+    //       email: authUser.email || profileData.email,
+    //       created_at: new Date(authUser.created_at),
+    //       updated_at: new Date(profileData.updated_at || authUser.updated_at || authUser.created_at),
+    //     }
+    //   }
 
-      console.log('Returning base user:', baseUser)
+    //   console.log('Returning base user:', baseUser)
 
-      return baseUser
-    } catch (error: any) {
-      console.log('Database query failed, using auth data only:', error.message)
-      return baseUser
-    }
+    //   return baseUser
+    // } catch (error: any) {
+    //   console.log('Database query failed, using auth data only:', error.message)
+    //   return baseUser
+    // }
   }
 
   // Create a user profile in the database
   async createUserProfile(userData: Partial<User>): Promise<UserResponse> {
     try {
-      const { data, error } = await supabase
-        .from('users')
-        .insert([userData])
-        .select()
-        .single()
+      const { data, error } = await supabase.from('users').insert([userData]).select().single()
 
       if (error) {
         return { success: false, error: error.message }
