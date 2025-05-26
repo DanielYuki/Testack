@@ -1,22 +1,21 @@
 import { Outlet } from 'react-router-dom'
 import Navigation from './Navigation'
-import { Auth } from '@supabase/auth-ui-react'
-import { ThemeSupa } from '@supabase/auth-ui-shared'
-import { useUser } from '../providers/UserProvider'
-import { getDB } from '../lib/supabase/supabaseClient'
-
-// Create the Supabase client once, outside the component
-const supabase = getDB()
+import LoginForm from './LoginForm'
+import { useUser } from '@/providers/UserProvider'
 
 const Layout = () => {
-  const { session } = useUser()
+  const { session, loading } = useUser()
 
-  if (!session) {
+  if (loading) {
     return (
-      <div className='mx-auto mt-[50vh] w-full max-w-2xl -translate-y-1/2'>
-        <Auth supabaseClient={supabase} appearance={{ theme: ThemeSupa }} />
+      <div className='min-h-screen flex items-center justify-center'>
+        <div className='animate-spin rounded-full h-32 w-32 border-b-2 border-indigo-500'></div>
       </div>
     )
+  }
+
+  if (!session) {
+    return <LoginForm />
   }
 
   return (

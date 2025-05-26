@@ -1,109 +1,142 @@
 import { createContext, useContext, useState, useEffect } from 'react'
-import { getDB } from '../lib/supabase/supabaseClient'
-
-interface User {
-  id: string
-  email: string
-  name: string
-  avatar_url?: string
-  created_at: string
-  updated_at: string
-}
+import { authService } from '@/services/authService'
+import { userService } from '@/services/userService'
+import type { User } from '@/lib/types/user'
 
 interface UserContextType {
   user: User | null
   session: any
   loading: boolean
+  refreshUser: () => Promise<void>
+  updateUserProfile: (updates: { name?: string }) => Promise<boolean>
+  isInitialized: boolean
 }
 
 const UserContext = createContext<UserContextType>({
   user: null,
   session: null,
   loading: true,
+  refreshUser: async () => {},
+  updateUserProfile: async () => false,
+  isInitialized: false,
 })
 
-// Create the Supabase client once, outside the component
-const supabase = getDB()
-
-// eslint-disable-next-line react/prop-types
 export function UserProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [session, setSession] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [isInitialized, setIsInitialized] = useState(false)
 
+  // Initialize auth state
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      if (session?.user) {
-        fetchUser(session.user.id)
-      } else {
-        setLoading(false)
-      }
-    })
+    initializeAuth()
 
+    // Listen to auth state changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session)
-      if (session?.user) {
-        fetchUser(session.user.id)
-      } else {
-        setUser(null)
-        setLoading(false)
-      }
-    })
+    } = authService.onAuthStateChange(handleAuthStateChange)
 
     return () => subscription.unsubscribe()
   }, [])
 
-  const fetchUser = async (userId: string) => {
+  const initializeAuth = async () => {
     try {
-      const { data, error } = await supabase.from('users').select('*').eq('id', userId).single()
-
-      if (error) {
-        // If user doesn't exist in users table, create a basic user object
-        if (error.code === 'PGRST116') {
-          console.log('User not found in users table, creating basic user object')
-          // Create a basic user object from auth session
-          const authUser = session?.user
-          if (authUser) {
-            const basicUser = {
-              id: authUser.id,
-              email: authUser.email,
-              name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'User',
-              avatar_url: authUser.user_metadata?.avatar_url || null,
-              created_at: authUser.created_at,
-              updated_at: authUser.updated_at,
-            }
-            setUser(basicUser)
-          }
-        } else {
-          throw error
-        }
-      } else {
-        setUser(data)
-      }
+      const currentSession = await authService.getSession()
+      await handleAuthStateChange('INITIAL_SESSION', currentSession)
     } catch (error) {
-      console.error('Error fetching user:', error)
-      // Don't completely fail - create a basic user from session if available
-      if (session?.user) {
-        const authUser = session.user
-        const fallbackUser = {
-          id: authUser.id,
-          email: authUser.email,
-          name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'User',
-          avatar_url: authUser.user_metadata?.avatar_url || null,
-          created_at: authUser.created_at,
-          updated_at: authUser.updated_at,
-        }
-        setUser(fallbackUser)
-      }
+      console.error('Error initializing auth:', error)
+      setLoading(false)
+      setIsInitialized(true)
+    }
+  }
+
+  const handleAuthStateChange = async (event: string, newSession: any) => {
+    console.log('Auth state change:', event, newSession?.user?.id || 'no user')
+    
+    setSession(newSession)
+
+    if (newSession?.user) {
+      await loadUser(newSession)
+    } else {
+      setUser(null)
+      setLoading(false)
+    }
+    
+    setIsInitialized(true)
+  }
+
+  const loadUser = async (currentSession: any) => {
+    try {
+      setLoading(true)
+      const userData = await userService.getUser(currentSession)
+      setUser(userData)
+      console.log('User loaded:', userData)
+    } catch (error) {
+      console.error('Error loading user:', error)
+      setUser(null)
     } finally {
       setLoading(false)
     }
   }
 
-  return <UserContext.Provider value={{ user, session, loading }}>{children}</UserContext.Provider>
+  const refreshUser = async () => {
+    if (session?.user) {
+      await loadUser(session)
+    }
+  }
+
+  const updateUserProfile = async (updates: { name?: string }): Promise<boolean> => {
+    if (!user) return false
+
+    try {
+      // Update in Supabase Auth first
+      const authResponse = await authService.updateProfile(updates)
+      if (!authResponse.success) {
+        console.error('Failed to update auth profile:', authResponse.error)
+        return false
+      }
+
+      // Try to update in database (create if doesn't exist)
+      const userExistsInDb = await userService.userExistsInDatabase(user.id)
+      
+      if (userExistsInDb) {
+        // Update existing profile
+        const dbResponse = await userService.updateUserProfile(user.id, updates)
+        if (!dbResponse.success) {
+          console.log('Could not update database profile:', dbResponse.error)
+        }
+      } else {
+        // Create new profile in database
+        const profileData = { ...user, ...updates }
+        const dbResponse = await userService.createUserProfile(profileData)
+        if (!dbResponse.success) {
+          console.log('Could not create database profile:', dbResponse.error)
+        }
+      }
+
+      // Update local state regardless of database operation success
+      setUser(prev => (prev ? { ...prev, ...updates } : null))
+      return true
+    } catch (error) {
+      console.error('Error updating user profile:', error)
+      return false
+    }
+  }
+
+  return (
+    <UserContext.Provider
+      value={{
+        user,
+        session,
+        loading,
+        refreshUser,
+        updateUserProfile,
+        isInitialized,
+      }}
+    >
+      {children}
+    </UserContext.Provider>
+  )
 }
 
 export const useUser = (): UserContextType => {

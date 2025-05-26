@@ -1,28 +1,52 @@
-import { userAtom } from '@/store/atoms'
-import { useAtom } from 'jotai'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useUser } from '@/providers/UserProvider'
+import { authService } from '@/services/authService'
 
 export default function Profile() {
-  const [user, setUser] = useAtom(userAtom)
+  const { user, updateUserProfile } = useUser()
   const [isEditing, setIsEditing] = useState(false)
-  const [formData, setFormData] = useState({ name: user.name, email: user.email })
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+  })
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  const handleLogin = () => {
-    setUser({ ...user, isLoggedIn: true })
+  // Update form data when user data changes
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        name: user.name || '',
+        email: user.email || '',
+      })
+    }
+  }, [user])
+
+  const handleLogout = async () => {
+    const result = await authService.signOut()
+    if (!result.success) {
+      console.error('Error logging out:', result.error)
+    }
   }
 
-  const handleLogout = () => {
-    setUser({ name: 'Guest', email: '', isLoggedIn: false })
-    setIsEditing(false)
-  }
+  const handleSave = async () => {
+    if (!user) return
+    setLoading(true)
+    setError(null)
 
-  const handleSave = () => {
-    setUser({ ...user, name: formData.name, email: formData.email })
-    setIsEditing(false)
+    const success = await updateUserProfile({ name: formData.name })
+
+    if (success) {
+      setIsEditing(false)
+    } else {
+      setError('Failed to update profile. Please try again.')
+    }
+
+    setLoading(false)
   }
 
   const handleCancel = () => {
-    setFormData({ name: user.name, email: user.email })
+    setFormData({ name: user?.name || '', email: user?.email || '' })
     setIsEditing(false)
   }
 
@@ -32,11 +56,11 @@ export default function Profile() {
         <div className='text-center mb-8'>
           <h1 className='text-4xl font-bold mb-4'>User Profile</h1>
           <p className='text-gray-600 dark:text-gray-300'>
-            Demonstrating user state management with Jotai
+            Your authenticated profile powered by Supabase
           </p>
         </div>
 
-        {/* Supabase Coming Soon Banner */}
+        {/* Supabase Active Banner */}
         <div className='mb-6 p-4 bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 border border-green-200 dark:border-green-700 rounded-lg'>
           <div className='flex items-center space-x-3'>
             <div className='flex-shrink-0'>
@@ -51,45 +75,30 @@ export default function Profile() {
                     strokeLinecap='round'
                     strokeLinejoin='round'
                     strokeWidth='2'
-                    d='M13 10V3L4 14h7v7l9-11h-7z'
+                    d='M5 13l4 4L19 7'
                   />
                 </svg>
               </div>
             </div>
             <div className='flex-1'>
               <h3 className='text-sm font-semibold text-green-800 dark:text-green-200'>
-                🚀 Supabase Integration Coming Soon!
+                ✅ Supabase Integration Active!
               </h3>
               <p className='text-sm text-green-700 dark:text-green-300 mt-1'>
-                Real-time database sync, authentication, and profile persistence will be available
-                soon.
+                Real-time authentication, secure logout, and profile management are now working.
               </p>
             </div>
           </div>
         </div>
 
         <div className={`p-8 rounded-lg shadow-lg  dark:bg-gray-800 bg-white`}>
-          {!user.isLoggedIn ? (
-            <div className='text-center'>
-              <div className='text-6xl mb-4'>👤</div>
-              <h2 className='text-2xl font-bold mb-4'>Welcome, Guest!</h2>
-              <p className='text-gray-600 dark:text-gray-300 mb-6'>
-                You are not logged in. Click the button below to simulate a login.
-              </p>
-              <button
-                onClick={handleLogin}
-                className='px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-semibold'
-              >
-                Login
-              </button>
-            </div>
-          ) : (
+          {user && (
             <div>
               <div className='flex items-center justify-between mb-6'>
                 <div className='flex items-center space-x-4'>
                   <div className='text-4xl'>👨‍💻</div>
                   <div>
-                    <h2 className='text-2xl font-bold'>Welcome back, {user.name}!</h2>
+                    <h2 className='text-2xl font-bold'>Welcome back, {user?.name}!</h2>
                     <p className='text-gray-600 dark:text-gray-300'>You are logged in</p>
                   </div>
                 </div>
@@ -121,16 +130,25 @@ export default function Profile() {
                       className={`w-full px-4 py-2 rounded-lg border ${'bg-gray-700 border-gray-600 text-white dark:bg-white dark:border-gray-300 dark:text-gray-900'} focus:outline-none focus:ring-2 focus:ring-blue-500`}
                     />
                   </div>
+
+                  {error && (
+                    <div className='rounded-md bg-red-50 dark:bg-red-900/20 p-4'>
+                      <div className='text-sm text-red-700 dark:text-red-400'>{error}</div>
+                    </div>
+                  )}
+
                   <div className='flex space-x-4'>
                     <button
                       onClick={handleSave}
-                      className='px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors'
+                      disabled={loading}
+                      className='px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
                     >
-                      Save
+                      {loading ? 'Saving...' : 'Save'}
                     </button>
                     <button
                       onClick={handleCancel}
-                      className='px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors'
+                      disabled={loading}
+                      className='px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
                     >
                       Cancel
                     </button>
@@ -144,13 +162,13 @@ export default function Profile() {
                         <label className='block text-sm font-medium text-gray-600 dark:text-gray-300'>
                           Name
                         </label>
-                        <p className='text-lg'>{user.name}</p>
+                        <p className='text-lg'>{user?.name}</p>
                       </div>
                       <div>
                         <label className='block text-sm font-medium text-gray-600 dark:text-gray-300'>
                           Email
                         </label>
-                        <p className='text-lg'>{user.email || 'Not provided'}</p>
+                        <p className='text-lg'>{user?.email || 'Not provided'}</p>
                       </div>
                     </div>
                   </div>
@@ -166,39 +184,36 @@ export default function Profile() {
           )}
         </div>
 
-        {/* Enhanced Features Section with Supabase Plans */}
+        {/* Enhanced Features Section */}
         <div className='grid grid-cols-1 md:grid-cols-2 gap-6 mt-8'>
-          <div className={`p-4 rounded-lg dark:bg-gray-800 bg-white shadow-md`}>
-            <h3 className='font-semibold mb-2'>💡 Current Jotai Features:</h3>
-            <ul className='text-sm space-y-1 text-gray-600 dark:text-gray-300'>
-              <li>• Object state management</li>
-              <li>• Conditional rendering based on state</li>
-              <li>• Form state synchronization</li>
-              <li>• State persistence across navigation</li>
+          <div
+            className={`p-4 rounded-lg dark:bg-gray-800 bg-white shadow-md border-2 border-green-300 dark:border-green-600`}
+          >
+            <h3 className='font-semibold mb-2 text-green-700 dark:text-green-300'>
+              ✅ Active Supabase Features:
+            </h3>
+            <ul className='text-sm space-y-1 text-green-600 dark:text-green-400'>
+              <li>• Custom authentication forms</li>
+              <li>• Secure login/logout</li>
+              <li>• Real-time auth state management</li>
+              <li>• User profile display</li>
+              <li>• Profile editing (name updates)</li>
             </ul>
           </div>
 
           <div
-            className={`p-4 rounded-lg dark:bg-gray-800 bg-white shadow-md border-2 border-dashed border-green-300 dark:border-green-600`}
+            className={`p-4 rounded-lg dark:bg-gray-800 bg-white shadow-md border-2 border-dashed border-blue-300 dark:border-blue-600`}
           >
-            <h3 className='font-semibold mb-2 text-green-700 dark:text-green-300'>
-              🔮 Coming with Supabase:
+            <h3 className='font-semibold mb-2 text-blue-700 dark:text-blue-300'>
+              🔮 Future Enhancements:
             </h3>
-            <ul className='text-sm space-y-1 text-green-600 dark:text-green-400'>
-              <li>• Real-time profile sync</li>
-              <li>• Secure authentication</li>
-              <li>• Cloud data persistence</li>
-              <li>• Multi-device profile access</li>
+            <ul className='text-sm space-y-1 text-blue-600 dark:text-blue-400'>
+              <li>• Database user profiles</li>
               <li>• Profile photo uploads</li>
+              <li>• Email verification</li>
+              <li>• Password reset functionality</li>
+              <li>• Multi-device sync</li>
             </ul>
-          </div>
-        </div>
-
-        {/* Progress Indicator */}
-        <div className='mt-8 text-center'>
-          <div className='inline-flex items-center space-x-2 px-4 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-full text-sm'>
-            <div className='animate-spin rounded-full h-3 w-3 border-b-2 border-blue-500'></div>
-            <span>Database integration in development...</span>
           </div>
         </div>
       </div>
