@@ -28,7 +28,7 @@ const Layout = () => {
       <main className='p-4'>
         <Outlet />
       </main>
-      
+
       {/* PWA Prompts */}
       <PWAInstallPrompt />
       <PWAUpdatePrompt />

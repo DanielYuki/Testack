@@ -33,7 +33,7 @@ export default function Navigation() {
           ))}
         </div>
 
-        <div className="flex items-center space-x-4">
+        <div className='flex items-center space-x-4'>
           <PWAStatus />
           <ThemeToggle showLabel={true} />
         </div>

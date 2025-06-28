@@ -102,14 +102,14 @@ export function usePWA(): PWAState & PWAActions {
     try {
       await deferredPrompt.prompt()
       const choiceResult = await deferredPrompt.userChoice
-      
+
       if (choiceResult.outcome === 'accepted') {
         console.log('User accepted the install prompt')
         setIsInstalled(true)
       } else {
         console.log('User dismissed the install prompt')
       }
-      
+
       setDeferredPrompt(null)
       setIsInstallable(false)
     } catch (error) {
@@ -140,10 +140,10 @@ export function usePWA(): PWAState & PWAActions {
     needRefresh,
     offlineReady,
     updateAvailable: needRefresh,
-    
+
     // Actions
     installApp,
     updateApp,
     dismissUpdate,
   }
-} 
+}
