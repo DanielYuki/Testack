@@ -1,6 +1,9 @@
 import { Outlet } from 'react-router-dom'
 import Navigation from './Navigation'
 import LoginForm from './LoginForm'
+import PWAInstallPrompt from './PWAInstallPrompt'
+import PWAUpdatePrompt from './PWAUpdatePrompt'
+import OfflineIndicator from './OfflineIndicator'
 import { useUser } from '@/providers/UserProvider'
 
 const Layout = () => {
@@ -21,9 +24,14 @@ const Layout = () => {
   return (
     <div>
       <Navigation />
+      <OfflineIndicator />
       <main className='p-4'>
         <Outlet />
       </main>
+      
+      {/* PWA Prompts */}
+      <PWAInstallPrompt />
+      <PWAUpdatePrompt />
     </div>
   )
 }

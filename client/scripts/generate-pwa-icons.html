@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>PWA Icon Generator</title>
+    <style>
+        body { font-family: system-ui, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }
+        .container { margin: 20px 0; }
+        button { padding: 10px 20px; margin: 10px 5px; background: #3b82f6; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background: #2563eb; }
+        .preview { display: flex; gap: 20px; flex-wrap: wrap; margin: 20px 0; }
+        .icon-preview { text-align: center; }
+        canvas { border: 1px solid #ccc; margin: 5px; }
+        .instructions { background: #f3f4f6; padding: 15px; border-radius: 5px; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <h1>PWA Icon Generator for TeStack</h1>
+    
+    <div class="instructions">
+        <h3>Instructions:</h3>
+        <ol>
+            <li>Click "Generate Icons" below</li>
+            <li>Right-click each generated icon and "Save image as..."</li>
+            <li>Save them in the <code>public/</code> directory with the names shown</li>
+            <li>Update the Vite PWA config to use PNG files instead of SVG</li>
+        </ol>
+    </div>
+
+    <div class="container">
+        <button onclick="generateIcons()">Generate Icons</button>
+        <button onclick="downloadAll()">Download All</button>
+        <button onclick="clearIcons()">Clear</button>
+    </div>
+
+    <div id="preview" class="preview"></div>
+
+    <script>
+        const iconSizes = [
+            { size: 192, name: 'pwa-192x192.png' },
+            { size: 512, name: 'pwa-512x512.png' }
+        ];
+
+        const svgSource = `
+        <svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="512" height="512" rx="128" fill="#3b82f6"/>
+            <rect x="128" y="128" width="256" height="48" fill="white"/>
+            <rect x="232" y="128" width="48" height="256" fill="white"/>
+            <circle cx="160" cy="400" r="24" fill="white" opacity="0.8"/>
+            <circle cx="256" cy="416" r="16" fill="white" opacity="0.6"/>
+            <circle cx="352" cy="400" r="24" fill="white" opacity="0.8"/>
+        </svg>
+        `;
+
+        function generateIcons() {
+            const preview = document.getElementById('preview');
+            preview.innerHTML = '';
+
+            iconSizes.forEach(({ size, name }) => {
+                const canvas = document.createElement('canvas');
+                canvas.width = size;
+                canvas.height = size;
+                canvas.style.width = '150px';
+                canvas.style.height = '150px';
+                
+                const ctx = canvas.getContext('2d');
+                
+                const img = new Image();
+                const svgBlob = new Blob([svgSource], { type: 'image/svg+xml' });
+                const svgUrl = URL.createObjectURL(svgBlob);
+                
+                img.onload = function() {
+                    ctx.drawImage(img, 0, 0, size, size);
+                    URL.revokeObjectURL(svgUrl);
+                };
+                
+                img.src = svgUrl;
+                
+                const container = document.createElement('div');
+                container.className = 'icon-preview';
+                
+                const label = document.createElement('div');
+                label.textContent = name;
+                label.style.marginTop = '10px';
+                label.style.fontWeight = 'bold';
+                
+                const sizeLabel = document.createElement('div');
+                sizeLabel.textContent = `${size}x${size}px`;
+                sizeLabel.style.color = '#666';
+                sizeLabel.style.fontSize = '12px';
+                
+                container.appendChild(canvas);
+                container.appendChild(label);
+                container.appendChild(sizeLabel);
+                preview.appendChild(container);
+            });
+        }
+
+        function downloadAll() {
+            const canvases = document.querySelectorAll('canvas');
+            canvases.forEach((canvas, index) => {
+                const link = document.createElement('a');
+                link.download = iconSizes[index].name;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            });
+        }
+
+        function clearIcons() {
+            document.getElementById('preview').innerHTML = '';
+        }
+
+        // Auto-generate on page load
+        window.onload = function() {
+            setTimeout(generateIcons, 100);
+        };
+    </script>
+
+    <div class="instructions">
+        <h3>Next Steps:</h3>
+        <p>After saving the icons, update your <code>vite.config.ts</code> to use PNG files:</p>
+        <pre style="background: #f8f9fa; padding: 10px; border-radius: 5px; overflow-x: auto;">
+icons: [
+  {
+    src: 'pwa-192x192.png',
+    sizes: '192x192',
+    type: 'image/png'
+  },
+  {
+    src: 'pwa-512x512.png',
+    sizes: '512x512',
+    type: 'image/png'
+  },
+  {
+    src: 'pwa-512x512.png',
+    sizes: '512x512',
+    type: 'image/png',
+    purpose: 'any maskable'
+  }
+]
+        </pre>
+    </div>
+</body>
+</html> 

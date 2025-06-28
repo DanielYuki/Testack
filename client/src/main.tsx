@@ -20,6 +20,7 @@ import Gallery from '@/pages/Gallery.tsx'
 import ImageDetail from '@/pages/ImageDetail.tsx'
 import ThemeSettings from '@/pages/ThemeSettings.tsx'
 import DesignSystem from '@/pages/DesignSystem.tsx'
+import PWAInfo from '@/pages/PWAInfo.tsx'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -37,6 +38,7 @@ createRoot(document.getElementById('root')!).render(
               <Route path='gallery/:id' element={<ImageDetail />} />
               <Route path='theme' element={<ThemeSettings />} />
               <Route path='design-system' element={<DesignSystem />} />
+              <Route path='pwa' element={<PWAInfo />} />
             </Route>
           </Routes>
         </BrowserRouter>

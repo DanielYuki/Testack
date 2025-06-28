@@ -1,0 +1,13 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="512" height="512" rx="128" fill="#3b82f6"/>
+  
+  <!-- Letter T -->
+  <rect x="128" y="128" width="256" height="48" fill="white"/>
+  <rect x="232" y="128" width="48" height="256" fill="white"/>
+  
+  <!-- Accent dots -->
+  <circle cx="160" cy="400" r="24" fill="white" opacity="0.8"/>
+  <circle cx="256" cy="416" r="16" fill="white" opacity="0.6"/>
+  <circle cx="352" cy="400" r="24" fill="white" opacity="0.8"/>
+</svg> 

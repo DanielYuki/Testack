@@ -1,5 +1,6 @@
 import { Link, useLocation } from 'react-router-dom'
 import ThemeToggle from './ThemeToggle'
+import PWAStatus from './PWAStatus'
 
 export default function Navigation() {
   const location = useLocation()
@@ -12,6 +13,7 @@ export default function Navigation() {
     { path: '/gallery', label: 'Gallery' },
     { path: '/theme', label: 'Theme' },
     { path: '/design-system', label: 'Design System' },
+    { path: '/pwa', label: 'PWA' },
   ]
 
   return (
@@ -31,7 +33,10 @@ export default function Navigation() {
           ))}
         </div>
 
-        <ThemeToggle showLabel={true} />
+        <div className="flex items-center space-x-4">
+          <PWAStatus />
+          <ThemeToggle showLabel={true} />
+        </div>
       </div>
     </nav>
   )
